@@ -171,6 +171,7 @@ public class PlayerScript : MonoBehaviour
                 break;
 
             case PlayerState.HITTING:
+                Vector3 direction = new Vector3();
                 swingCollider.enabled = true;
                 spriteRenderer.sprite = hitSprite;
                 //as we're hitting, we can aim the ball
@@ -211,8 +212,12 @@ public class PlayerScript : MonoBehaviour
                     //    angle -= 180.0f;
                     //}
 
+                    direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
 
-                    BallScript.ball.direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
+                    if (BallScript.ball.gameObject.transform.localPosition.x < this.gameObject.transform.localPosition.x)
+                    {
+                        direction *= -1;
+                    }
                 }
                 else
                 {
@@ -224,9 +229,14 @@ public class PlayerScript : MonoBehaviour
                     angle /= angleDivider;
                     angle -= 90.0f;
 
-                    BallScript.ball.direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
-                }
+                    direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
 
+                    if (BallScript.ball.gameObject.transform.localPosition.x > this.gameObject.transform.localPosition.x)
+                    {
+                        direction *= -1;
+                    }
+                }
+                BallScript.ball.direction = direction;
 
 
 
