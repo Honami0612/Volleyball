@@ -7,6 +7,8 @@ public class PlayerScript : MonoBehaviour
 {
     [SerializeField]
     Text checkText;
+    [SerializeField]
+    ParticleSystem[] foam;
     
     //which player it is. 0 is left, 1 is right
     public int playerNum;
@@ -31,6 +33,8 @@ public class PlayerScript : MonoBehaviour
     public Sprite recoverySprite;
     public Sprite dieSprite;
     public Sprite runSprite;
+    public Sprite upSprite;
+    public Sprite downSprite;
 
     //input mapping (just set these in the editor)
     public KeyCode hitKey = KeyCode.C;
@@ -56,6 +60,8 @@ public class PlayerScript : MonoBehaviour
         GET_HIT,
         DEAD,
         RUN,
+        UP,
+        DOWN
     }
     PlayerState playerState = PlayerState.NORMAL;
     Vector3 startPosition;
@@ -113,39 +119,72 @@ public class PlayerScript : MonoBehaviour
     //you can add more abilities here as PlayerStates, more or other hitboxes etc
     void Update()
     {
+
         switch (playerState)
         {
             case PlayerState.NORMAL:
                 swingCollider.enabled = false;
                 spriteRenderer.sprite = idleSprite;
-
+                if (position.y >= -3f)
+                {
+                    position -= Vector3.up * 0.04f;
+                }
+               
                 //this is where we can check to start actions
                 //since the player is doing nothing right now
                 if (Input.GetKeyDown(hitKey))
                 {
+                    if (playerNum == 0)
+                    {
+                        foam[0].Play();
+                        //this.gameObject.transform.position = Vector3.Lerp(transform.position, new Vector3(transform.position.x, -3, 0),Time.deltaTime*2);
+                        
+                    }
+                    else
+                    {
+                        foam[1].Play();
+                    }
+                   
                     StartCoroutine(SwingCoroutine());
+
                 }
 
-                if (Input.GetKey(upKey))
-                    //rb.AddForce(transform.up * jumpForce);
-                    position += Vector3.up * moveSpeed;
 
-                if (Input.GetKey(downKey))
-                    position -= Vector3.up * moveSpeed;
+                if (Input.GetKeyDown(upKey))  playerState = PlayerState.UP;
+                if (Input.GetKeyDown(downKey)) playerState = PlayerState.DOWN;
 
-                if (Input.GetKeyDown(rightKey) || (Input.GetKeyDown(leftKey)))
-                {
-                    playerState = PlayerState.RUN;
-                }
+                if (Input.GetKeyDown(rightKey) || (Input.GetKeyDown(leftKey)))    playerState = PlayerState.RUN;
 
-               
-                
-               
                 break;
+
+
+            case PlayerState.UP:
+                spriteRenderer.sprite = upSprite;
+
+                if (Input.GetKey(upKey))  position += Vector3.up * moveSpeed;
+             
+                if (Input.GetKeyUp(upKey)) playerState = PlayerState.NORMAL;
+
+                break;
+
+
+            case PlayerState.DOWN:
+                spriteRenderer.sprite = downSprite;
+
+                if (Input.GetKey(downKey)) position -= Vector3.up * moveSpeed;
+
+                if (Input.GetKeyUp(downKey)) playerState = PlayerState.NORMAL;
+
+                break;
+
 
             case PlayerState.RUN:
                 //move around
                 m_animator.PlayAnimation("RUN");
+                if (position.y >= -3f)
+                {
+                    position -= Vector3.up * 0.04f;
+                }
                 //spriteRenderer.sprite = runSprite;
                 if (Input.GetKey(rightKey))
                 {
@@ -161,16 +200,21 @@ public class PlayerScript : MonoBehaviour
                     transform.localScale = new Vector3(-2, 2, 2);
                 }
 
-
                 position.x = Mathf.Clamp(position.x, -8f, 8f);
                 position.y = Mathf.Clamp(position.y, -3.5f, 2.5f);
+
                 break;
+
+
             case PlayerState.SWINGING:
                 swingCollider.enabled = true;
                 spriteRenderer.sprite = swingSprite;
+
                 break;
 
+
             case PlayerState.HITTING:
+                Vector3 direction = new Vector3();
                 swingCollider.enabled = true;
                 spriteRenderer.sprite = hitSprite;
                 //as we're hitting, we can aim the ball
@@ -201,18 +245,15 @@ public class PlayerScript : MonoBehaviour
 
 
                     angle /= angleDivider;
-                        angle += 90.0f;
+                    angle += 90.0f;
 
 
-                    //if (Input.GetKey(leftKey))
-                    //{
-                    //    angleDivider = 2.0f;
-                    //    angle /= angleDivider;
-                    //    angle -= 180.0f;
-                    //}
+                    direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
 
-
-                    BallScript.ball.direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
+                    if (BallScript.ball.gameObject.transform.localPosition.x < this.gameObject.transform.localPosition.x)
+                    {
+                        direction *= -1;
+                    }
                 }
                 else
                 {
@@ -224,25 +265,31 @@ public class PlayerScript : MonoBehaviour
                     angle /= angleDivider;
                     angle -= 90.0f;
 
-                    BallScript.ball.direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
+                    direction = new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad), .0f);
+                    if (BallScript.ball.gameObject.transform.localPosition.x > this.gameObject.transform.localPosition.x)
+                    {
+                        direction *= -1;
+                    }
+
                 }
 
-
-
-
-
+                BallScript.ball.direction = direction;
 
                 //tip: you can use BallScript.ball to access the ball from anywhere
                 break;
+
+
             case PlayerState.SWING_RECOVERY:
                 swingCollider.enabled = false;
                 spriteRenderer.sprite = recoverySprite;
                 break;
 
+
             case PlayerState.GET_HIT:
                 swingCollider.enabled = false;
                 spriteRenderer.sprite = dieSprite;
                 break;
+
 
             case PlayerState.DEAD:
                 swingCollider.enabled = false;
